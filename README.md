@@ -150,7 +150,3 @@ print_results(study)
 - pandas >= 1.5.0
 - numpy >= 1.21.0
 - optuna >= 3.0.0 (optional, for optimization)
-
-## License
-
-MIT
