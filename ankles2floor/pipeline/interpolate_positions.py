@@ -12,8 +12,7 @@ import pandas as pd
 
 def interpolate_positions(
     data: pd.DataFrame,
-    ankle_columns: dict[str, dict[str, str]],
-    z_offset: float,
+    ankle_columns: dict[str, dict[str, str]]
 ) -> pd.DataFrame:
     """
     Interpolate x/y positions for grounded ankles and compute z-coordinates.
@@ -33,7 +32,7 @@ def interpolate_positions(
     result = data.copy()
 
     for ankle_name in ankle_columns.keys():
-        result = _interpolate_ankle_positions(result, ankle_name, z_offset)
+        result = _interpolate_ankle_positions(result, ankle_name)
 
     return result
 
@@ -41,7 +40,6 @@ def interpolate_positions(
 def _interpolate_ankle_positions(
     data: pd.DataFrame,
     ankle_name: str,
-    z_offset: float,
 ) -> pd.DataFrame:
     """
     Interpolate positions and compute z for a single ankle.
@@ -71,7 +69,7 @@ def _interpolate_ankle_positions(
         return result
 
     result = _interpolate_xy_for_grounded(result, x_col, y_col, grounded_indices)
-    result = _compute_z_coordinates(result, pred_col, z_col, z_offset)
+    result = _compute_z_coordinates(result, pred_col, z_col)
 
     return result
 
@@ -123,7 +121,6 @@ def _compute_z_coordinates(
     data: pd.DataFrame,
     pred_col: str,
     z_col: str,
-    z_offset: float,
 ) -> pd.DataFrame:
     """
     Compute z-coordinates: z_offset when grounded, parabolic trajectory when airborne.
@@ -145,12 +142,12 @@ def _compute_z_coordinates(
     result = data.copy()
 
     grounded_mask = result[pred_col] == 1
-    result.loc[grounded_mask, z_col] = z_offset
+    result.loc[grounded_mask, z_col] = 0
 
     airborne_segments = _find_airborne_segments(result, pred_col)
 
     for start_idx, end_idx in airborne_segments:
-        result = _compute_parabolic_z(result, z_col, z_offset, start_idx, end_idx)
+        result = _compute_parabolic_z(result, z_col, start_idx, end_idx)
 
     return result
 
@@ -197,7 +194,6 @@ def _find_airborne_segments(
 def _compute_parabolic_z(
     data: pd.DataFrame,
     z_col: str,
-    z_offset: float,
     start_idx: int,
     end_idx: int,
 ) -> pd.DataFrame:
@@ -238,7 +234,7 @@ def _compute_parabolic_z(
         t = current_time - start_time
         normalized_t = t / total_time
         
-        z_value = z_offset + max_height * 4 * normalized_t * (1 - normalized_t)
+        z_value = max_height * 4 * normalized_t * (1 - normalized_t)
         result.loc[idx, z_col] = z_value
 
     return result
