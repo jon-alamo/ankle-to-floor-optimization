@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ankles2floor"
+version = "1.0.0"
+description = "Ankle-to-floor classification for padel players using pose detection coordinates"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Joni"}
+]
+keywords = ["padel", "pose-detection", "ankle-classification", "coco17"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "pandas>=1.5.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+optimization = [
+    "optuna>=3.0.0",
+]
+dev = [
+    "optuna>=3.0.0",
+    "pytest>=7.0.0",
+]
+
+[project.scripts]
+ankles2floor-optimize = "ankles2floor.optimization:main"
+
+[project.urls]
+Homepage = "https://github.com/joni/ankles2floor"
+Repository = "https://github.com/joni/ankles2floor"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ankles2floor*"]
+
+[tool.setuptools.package-data]
+ankles2floor = ["datasets/*.csv", "datasets/*.md"]
