@@ -126,6 +126,7 @@ def run_optimization_pipeline(
         vel_y_threshold,
         acc_x_threshold,
         acc_y_threshold,
+        use_acceleration,
         min_distance_factor,
     )
 
