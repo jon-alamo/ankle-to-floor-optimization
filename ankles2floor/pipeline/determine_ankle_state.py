@@ -53,8 +53,9 @@ def determine_ankle_state(
     ankle_columns: dict[str, dict[str, str]],
     vel_x_threshold: float,
     vel_y_threshold: float,
-    acc_x_threshold: float,
-    acc_y_threshold: float,
+    acc_x_threshold: float | None,
+    acc_y_threshold: float | None,
+    use_acceleration: bool,
     min_distance_factor: float,
 ) -> pd.DataFrame:
     """
@@ -80,21 +81,25 @@ def determine_ankle_state(
     for ankle_name in ankle_columns.keys():
         vel_x_col = f"{ankle_name}_vel_x"
         vel_y_col = f"{ankle_name}_vel_y"
-        acc_x_col = f"{ankle_name}_acc_x"
-        acc_y_col = f"{ankle_name}_acc_y"
+        if use_acceleration:
+            acc_x_col = f"{ankle_name}_acc_x"
+            acc_y_col = f"{ankle_name}_acc_y"
         factor_col = f"{ankle_name}_distance_factor"
         pred_col = f"{ankle_name}_pred"
 
         adjusted_vel_x_threshold = vel_x_threshold * result[factor_col]
         adjusted_vel_y_threshold = vel_y_threshold * result[factor_col]
-        adjusted_acc_x_threshold = acc_x_threshold * result[factor_col]
-        adjusted_acc_y_threshold = acc_y_threshold * result[factor_col]
+        if acc_x_threshold is not None and acc_y_threshold is not None:
+            adjusted_acc_x_threshold = acc_x_threshold * result[factor_col]
+            adjusted_acc_y_threshold = acc_y_threshold * result[factor_col]
 
         vel_x_ok = np.abs(result[vel_x_col]) <= adjusted_vel_x_threshold
         vel_y_ok = np.abs(result[vel_y_col]) <= adjusted_vel_y_threshold
-        acc_x_ok = np.abs(result[acc_x_col]) <= adjusted_acc_x_threshold
-        acc_y_ok = np.abs(result[acc_y_col]) <= adjusted_acc_y_threshold
-
-        result[pred_col] = (vel_x_ok & vel_y_ok & acc_x_ok & acc_y_ok).astype(int)
+        if acc_x_threshold is not None and acc_y_threshold is not None:
+            acc_x_ok = np.abs(result[acc_x_col]) <= adjusted_acc_x_threshold
+            acc_y_ok = np.abs(result[acc_y_col]) <= adjusted_acc_y_threshold
+            result[pred_col] = (vel_x_ok & vel_y_ok & acc_x_ok & acc_y_ok).astype(int)
+        else:
+            result[pred_col] = (vel_x_ok & vel_y_ok).astype(int)
 
     return result

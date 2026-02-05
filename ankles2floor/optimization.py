@@ -86,8 +86,9 @@ def run_optimization_pipeline(
     window: int,
     vel_x_threshold: float,
     vel_y_threshold: float,
-    acc_x_threshold: float,
-    acc_y_threshold: float,
+    acc_x_threshold: float | None,
+    acc_y_threshold: float | None,
+    use_acceleration: bool,
     min_distance_factor: float,
 ) -> pd.DataFrame:
     """
@@ -112,7 +113,12 @@ def run_optimization_pipeline(
 
     result = smooth_positions(data, ANKLE_COLUMNS_MAP, window)
     result = compute_velocity(result, ANKLE_COLUMNS_MAP)
-    result = compute_acceleration(result, ANKLE_COLUMNS_MAP)
+    if use_acceleration:
+        result = compute_acceleration(result, ANKLE_COLUMNS_MAP)
+    else:
+        acc_x_threshold = None
+        acc_y_threshold = None 
+
     result = determine_ankle_state(
         result,
         ANKLE_COLUMNS_MAP,
@@ -215,6 +221,7 @@ def objective_function(
     acc_x_threshold: float,
     acc_y_threshold: float,
     min_distance_factor: float,
+    use_acceleration: bool,
     tolerance: int = 1,
 ) -> float:
     """
@@ -242,7 +249,8 @@ def objective_function(
         vel_y_threshold,
         acc_x_threshold,
         acc_y_threshold,
-        min_distance_factor,
+        use_acceleration,
+        min_distance_factor
     )
 
     metrics = compute_metrics(result, tolerance)
@@ -269,10 +277,11 @@ def create_objective(data: pd.DataFrame, tolerance: int = 1):
     def objective(trial: Trial) -> float:
         window = trial.suggest_int("window", 2, 4)
         vel_x_threshold = trial.suggest_float("vel_x_threshold", 1.5, 2.5)
-        vel_y_threshold = trial.suggest_float("vel_y_threshold", 3., 4.)
-        acc_x_threshold = trial.suggest_float("acc_x_threshold", 10, 20.0)
-        acc_y_threshold = trial.suggest_float("acc_y_threshold", 10, 20.0)
-        min_distance_factor = trial.suggest_float("min_distance_factor", 0.5, 8.0)
+        vel_y_threshold = trial.suggest_float("vel_y_threshold", 2.5, 3.5)
+        acc_y_threshold = trial.suggest_float("acc_y_threshold", 0.01, 0.01)
+        acc_x_threshold = trial.suggest_float("acc_x_threshold", 0.01, 0.01)
+        use_acceleration = trial.suggest_categorical("use_acceleration", [True, False])
+        min_distance_factor = trial.suggest_float("min_distance_factor", 0.7, 0.9)
 
         return objective_function(
             data=data,
@@ -282,6 +291,7 @@ def create_objective(data: pd.DataFrame, tolerance: int = 1):
             acc_x_threshold=acc_x_threshold,
             acc_y_threshold=acc_y_threshold,
             min_distance_factor=min_distance_factor,
+            use_acceleration=use_acceleration,
             tolerance=tolerance,
         )
 
@@ -338,13 +348,20 @@ def run_optimization(
     return study
 
 
-def print_results(study: "optuna.Study", tolerance: int = 1) -> None:
+def print_results(
+    study: "optuna.Study",
+    tolerance: int = 1,
+    ankle_data_path: str | None = None,
+    annotations_path: str | None = None,
+) -> None:
     """
     Print optimization results.
 
     Args:
         study: Completed Optuna study.
         tolerance: Tolerance frames used.
+        ankle_data_path: Path to ankle data CSV. Uses default if None.
+        annotations_path: Path to annotations CSV. Uses default if None.
     """
     print("\n" + "=" * 60)
     print("OPTIMIZATION RESULTS")
@@ -358,6 +375,35 @@ def print_results(study: "optuna.Study", tolerance: int = 1) -> None:
             print(f"  {param_name}: {param_value:.4f}")
         else:
             print(f"  {param_name}: {param_value}")
+
+    # Recompute metrics with best parameters to show detailed results
+    if ankle_data_path is None:
+        ankle_data_path = str(_get_datasets_path() / "bcn-finals-2022-fem-ankle-and-shot-data.csv")
+    if annotations_path is None:
+        annotations_path = str(_get_datasets_path() / "bcn-finals-2022-fem-ankles-in-floor-annotations.csv")
+
+    data = load_and_prepare_data(ankle_data_path, annotations_path)
+    
+    best_params = study.best_params
+    result = run_optimization_pipeline(
+        data,
+        window=best_params["window"],
+        vel_x_threshold=best_params["vel_x_threshold"],
+        vel_y_threshold=best_params["vel_y_threshold"],
+        acc_x_threshold=best_params.get("acc_x_threshold"),
+        acc_y_threshold=best_params.get("acc_y_threshold"),
+        use_acceleration=best_params.get("use_acceleration", False),
+        min_distance_factor=best_params["min_distance_factor"],
+    )
+
+    metrics = compute_metrics(result, tolerance)
+
+    print("\nDetailed metrics:")
+    print(f"  TP: {metrics['tp']}")
+    print(f"  FP: {metrics['fp']}")
+    print(f"  FN: {metrics['fn']}")
+    print(f"  Precision: {metrics['precision']:.4f}")
+    print(f"  Recall: {metrics['recall']:.4f}")
 
 
 def main() -> None:

@@ -20,8 +20,8 @@ def get_ankles_in_floor(
     vel_y_threshold: float | None = None,
     acc_x_threshold: float | None = None,
     acc_y_threshold: float | None = None,
-    min_distance_factor: float | None = None,
-    z_offset: float | None = None,
+    use_acceleration: bool | None = None,
+    min_distance_factor: float | None = None
 ) -> pd.DataFrame:
     """
     Classify ankle movements to determine when feet are grounded.
@@ -89,6 +89,7 @@ def get_ankles_in_floor(
         "vel_y_threshold": vel_y_threshold if vel_y_threshold is not None else best_parameters["vel_y_threshold"],
         "acc_x_threshold": acc_x_threshold if acc_x_threshold is not None else best_parameters["acc_x_threshold"],
         "acc_y_threshold": acc_y_threshold if acc_y_threshold is not None else best_parameters["acc_y_threshold"],
+        "use_acceleration": use_acceleration if use_acceleration is not None else best_parameters["use_acceleration"],
         "min_distance_factor": min_distance_factor if min_distance_factor is not None else best_parameters["min_distance_factor"],
     }
 
@@ -103,11 +104,12 @@ def get_ankles_in_floor(
         params["vel_y_threshold"],
         params["acc_x_threshold"],
         params["acc_y_threshold"],
+        params['use_acceleration'],
         params["min_distance_factor"],
     )
 
-    if z_offset is not None:
-        result = interpolate_positions(result, ankle_columns, z_offset)
+
+    result = interpolate_positions(result, ankle_columns)
 
     return result
 
