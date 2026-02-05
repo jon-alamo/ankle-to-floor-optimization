@@ -71,6 +71,7 @@ def determine_ankle_state(
         vel_y_threshold: Vertical velocity threshold (pixels/frame).
         acc_x_threshold: Horizontal acceleration threshold (pixels/frame²).
         acc_y_threshold: Vertical acceleration threshold (pixels/frame²).
+        use_acceleration: Whether to use acceleration in the classification.
         min_distance_factor: Minimum distance factor for perspective adjustment.
 
     Returns:
@@ -81,21 +82,20 @@ def determine_ankle_state(
     for ankle_name in ankle_columns.keys():
         vel_x_col = f"{ankle_name}_vel_x"
         vel_y_col = f"{ankle_name}_vel_y"
-        if use_acceleration:
-            acc_x_col = f"{ankle_name}_acc_x"
-            acc_y_col = f"{ankle_name}_acc_y"
         factor_col = f"{ankle_name}_distance_factor"
         pred_col = f"{ankle_name}_pred"
 
         adjusted_vel_x_threshold = vel_x_threshold * result[factor_col]
         adjusted_vel_y_threshold = vel_y_threshold * result[factor_col]
-        if acc_x_threshold is not None and acc_y_threshold is not None:
-            adjusted_acc_x_threshold = acc_x_threshold * result[factor_col]
-            adjusted_acc_y_threshold = acc_y_threshold * result[factor_col]
 
         vel_x_ok = np.abs(result[vel_x_col]) <= adjusted_vel_x_threshold
         vel_y_ok = np.abs(result[vel_y_col]) <= adjusted_vel_y_threshold
-        if acc_x_threshold is not None and acc_y_threshold is not None:
+
+        if use_acceleration and acc_x_threshold is not None and acc_y_threshold is not None:
+            acc_x_col = f"{ankle_name}_acc_x"
+            acc_y_col = f"{ankle_name}_acc_y"
+            adjusted_acc_x_threshold = acc_x_threshold * result[factor_col]
+            adjusted_acc_y_threshold = acc_y_threshold * result[factor_col]
             acc_x_ok = np.abs(result[acc_x_col]) <= adjusted_acc_x_threshold
             acc_y_ok = np.abs(result[acc_y_col]) <= adjusted_acc_y_threshold
             result[pred_col] = (vel_x_ok & vel_y_ok & acc_x_ok & acc_y_ok).astype(int)

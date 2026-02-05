@@ -16,6 +16,12 @@ To include optimization capabilities (requires Optuna):
 pip install "ankles2floor[optimization] @ git+https://github.com/joni/ankles2floor.git"
 ```
 
+For development (includes testing tools):
+
+```bash
+pip install "ankles2floor[dev] @ git+https://github.com/joni/ankles2floor.git"
+```
+
 ## Quick Start
 
 ```python
@@ -94,11 +100,11 @@ def get_ankles_in_floor(
 | `data` | `pd.DataFrame` | Required | DataFrame containing ankle position columns and a "time" column (required when z_offset is provided) |
 | `ankle_columns` | `dict` | Required | Mapping of ankle names to their x/y column names |
 | `window` | `int` | 3 | Smoothing window size for rolling mean |
-| `vel_x_threshold` | `float` | 2.0875 | Horizontal velocity threshold (pixels/frame) |
-| `vel_y_threshold` | `float` | 3.5748 | Vertical velocity threshold (pixels/frame) |
-| `acc_x_threshold` | `float` | 15.3652 | Horizontal acceleration threshold (pixels/frame²) |
-| `acc_y_threshold` | `float` | 14.6945 | Vertical acceleration threshold (pixels/frame²) |
-| `min_distance_factor` | `float` | 0.6257 | Minimum distance factor for perspective adjustment |
+| `vel_x_threshold` | `float` | 2.2639 | Horizontal velocity threshold (pixels/frame) |
+| `vel_y_threshold` | `float` | 3.0747 | Vertical velocity threshold (pixels/frame) |
+| `acc_x_threshold` | `float` | 0.0 | Horizontal acceleration threshold (pixels/frame²) |
+| `acc_y_threshold` | `float` | 0.0 | Vertical acceleration threshold (pixels/frame²) |
+| `min_distance_factor` | `float` | 0.7555 | Minimum distance factor for perspective adjustment |
 | `z_offset` | `float` | None | Height value for ankles on the floor. When provided, enables position interpolation and z-coordinate computation |
 
 **Returns:** DataFrame with original data plus `{ankle_name}_pred` columns (0 or 1). When `z_offset` is provided, also includes `{ankle_name}_z` columns and interpolated x/y positions.
@@ -113,13 +119,31 @@ from ankles2floor import best_parameters
 print(best_parameters)
 # {
 #     "window": 3,
-#     "vel_x_threshold": 2.0875,
-#     "vel_y_threshold": 3.5748,
-#     "acc_x_threshold": 15.3652,
-#     "acc_y_threshold": 14.6945,
-#     "min_distance_factor": 0.6257
+#     "vel_x_threshold": 2.2639,
+#     "vel_y_threshold": 3.0747,
+#     "acc_x_threshold": 0,
+#     "acc_y_threshold": 0,
+#     "use_acceleration": False,
+#     "min_distance_factor": 0.7555
 # }
 ```
+
+## Testing
+
+The package includes a comprehensive test suite. To run the tests:
+
+```bash
+# Install development dependencies
+pip install "ankles2floor[dev] @ git+https://github.com/joni/ankles2floor.git"
+
+# Run tests
+pytest tests/ -v
+```
+
+The test suite covers:
+- **Pipeline modules**: smooth_positions, compute_velocity, compute_acceleration, determine_ankle_state, interpolate_positions
+- **Core API**: get_ankles_in_floor function and default parameters
+- **Optimization module**: metrics computation, data loading, and pipeline execution
 
 ## Optimization (Optional)
 
@@ -150,3 +174,4 @@ print_results(study)
 - pandas >= 1.5.0
 - numpy >= 1.21.0
 - optuna >= 3.0.0 (optional, for optimization)
+- pytest >= 7.0.0 (optional, for development/testing)
